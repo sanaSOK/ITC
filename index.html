@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to ITC</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Welcome to INSTITUTE OF TECHNOLOGY OF CAMBODIA</h1>
+        </header>
+        <main>
+            <div id="imageContainer" class="image-container">
+                <div class="image-part">
+                    <img id="mainImage" src="./image/itc.png" alt="Institute of Technology of Cambodia building" onclick="handleImageClick()">
+                </div>
+                <div id="contentPart" class="content-part">
+                    <p id="roomContent"></p>
+                </div>
+                <div id="floorButtonsContainer" class="floor-buttons-container">
+                    <button class="floor-button" onclick="loadFloor('Floor 1')">Floor 1</button>
+                    <button class="floor-button" onclick="loadFloor('Floor 2')">Floor 2</button>
+                    <button class="floor-button" onclick="loadFloor('Floor 3')">Floor 3</button>
+                    <button class="floor-button" onclick="loadFloor('Floor 4')">Floor 4</button>
+                </div>
+                <button id="backButton" class="back-button" onclick="showPreviousImage()">Back</button>
+                <button id="nextButton" class="next-button" onclick="showNextImage()">Next</button>
+                
+            </div>
+            <div class="building-name">
+                <h2 id="buildingTitle">Initial Building</h2>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

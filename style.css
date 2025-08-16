@@ -138,3 +138,19 @@ main {
 .back-button {
     left: 20px;
 }
+
+.choose-floor-button {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  color: white;
+  background-color: rgba(32,178,170,0.9);
+  border: none;
+  border-radius: 5px;
+  padding: 10px 16px;
+  font-size: 1em;
+  cursor: pointer;
+  visibility: hidden; /* shown only when browsing rooms */
+}

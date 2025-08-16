@@ -24,6 +24,8 @@ let startY = 0;
 let moved = false;
 const swipeThreshold = 60; // pixels to consider a swipe
 
+
+
 function resetToHome() {
     const mainImage = document.getElementById('mainImage');
     const buildingTitle = document.getElementById('buildingTitle');
@@ -31,6 +33,8 @@ function resetToHome() {
     const contentPart = document.getElementById('contentPart');
     const nextButton = document.getElementById('nextButton');
     const backButton = document.getElementById('backButton');
+    const chooseFloorButton = document.getElementById('chooseFloorButton');
+    if (chooseFloorButton) chooseFloorButton.style.visibility = 'hidden';
 
     // Stop any ongoing carousels
     stopBuildingFCarousel();
@@ -46,6 +50,28 @@ function resetToHome() {
     backButton.style.visibility = 'hidden';
     currentStep = 0; // Reset the step counter
     resetTimer(); // Start the timer again
+}
+
+function loadFloorSelection() {
+  const mainImage = document.getElementById('mainImage');
+  const buildingTitle = document.getElementById('buildingTitle');
+  const floorButtonsContainer = document.getElementById('floorButtonsContainer');
+  const nextButton = document.getElementById('nextButton');
+  const backButton = document.getElementById('backButton');
+  const chooseFloorButton = document.getElementById('chooseFloorButton');
+
+  stopBuildingFCarousel();
+  if (nextButton) nextButton.style.visibility = 'hidden';
+  if (backButton) backButton.style.visibility = 'hidden';
+  if (chooseFloorButton) chooseFloorButton.style.visibility = 'hidden';
+
+  mainImage.src = './image/floor.png';
+  mainImage.alt = 'Building F - Floor Selection';
+  buildingTitle.textContent = 'Building F - Select a Floor';
+  floorButtonsContainer.style.visibility = 'visible';
+  mainImage.onclick = null;
+  currentStep = 2;
+  currentFloorStep = 0;
 }
 
 function resetTimer() {
@@ -188,6 +214,7 @@ function stopBuildingFCarousel() {
     clearInterval(buildingFInterval);
 }
 
+
 function loadFloor(floorName) {
     resetTimer();
     const mainImage = document.getElementById('mainImage');
@@ -196,6 +223,8 @@ function loadFloor(floorName) {
     const nextButton = document.getElementById('nextButton');
     const contentPart = document.getElementById('contentPart');
     const backButton = document.getElementById('backButton');
+    const chooseFloorButton = document.getElementById('chooseFloorButton');
+    if (chooseFloorButton) chooseFloorButton.style.visibility = 'visible';
     
     floorButtonsContainer.style.visibility = 'hidden';
     contentPart.style.display = 'none';
@@ -251,6 +280,8 @@ function loadFloor(floorName) {
 
 function showRoomDetails(roomName) {
     resetTimer();
+    const chooseFloorButton = document.getElementById('chooseFloorButton');
+    if (chooseFloorButton) chooseFloorButton.style.visibility = 'visible';
     const mainImage = document.getElementById('mainImage');
     const buildingTitle = document.getElementById('buildingTitle');
     const contentPart = document.getElementById('contentPart');

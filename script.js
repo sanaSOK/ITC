@@ -16,6 +16,14 @@ let lastRoomDetails = null;
 let inactivityTimer;
 const inactivityTimeLimit = 5000; // 5 seconds (5000 milliseconds)
 
+// Swipe / Drag support
+let isPointerDown = false;
+let pointerId = null;
+let startX = 0;
+let startY = 0;
+let moved = false;
+const swipeThreshold = 60; // pixels to consider a swipe
+
 function resetToHome() {
     const mainImage = document.getElementById('mainImage');
     const buildingTitle = document.getElementById('buildingTitle');
@@ -46,6 +54,90 @@ function resetTimer() {
     inactivityTimer = setTimeout(resetToHome, inactivityTimeLimit);
 }
 
+function initSwipe() {
+    const container = document.getElementById('imageContainer');
+    const mainImage = document.getElementById('mainImage');
+    if (!container || !mainImage) return;
+
+    // Prevent native image dragging
+    mainImage.draggable = false;
+    // Allow smoother transform animations
+    mainImage.style.transition = 'transform 200ms ease';
+    // Allow vertical page scroll while handling horizontal swipes
+    container.style.touchAction = 'pan-y';
+
+    container.addEventListener('pointerdown', (e) => {
+        if (e.isPrimary === false) return;
+        // Only enable pointer interactions when we are in floor room display
+        const buildingTitle = document.getElementById('buildingTitle');
+        if (!buildingTitle || !buildingTitle.textContent.startsWith('Floor')) return;
+        // Only start swipe when user presses on the image itself; allow buttons to receive clicks
+        if (e.target !== mainImage) return;
+
+        isPointerDown = true;
+        pointerId = e.pointerId;
+        startX = e.clientX;
+        startY = e.clientY;
+        moved = false;
+        try { container.setPointerCapture(pointerId); } catch (err) {}
+        resetTimer();
+    });
+
+    container.addEventListener('pointermove', (e) => {
+        if (!isPointerDown || e.pointerId !== pointerId) return;
+        const buildingTitle = document.getElementById('buildingTitle');
+        if (!buildingTitle || !buildingTitle.textContent.startsWith('Floor')) return;
+
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        // If horizontal move is larger than vertical move, treat as drag
+        if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+            moved = true;
+            mainImage.style.transition = 'none';
+            mainImage.style.transform = `translateX(${dx}px)`;
+        }
+    });
+
+    function endPointer(e) {
+        if (!isPointerDown || e.pointerId !== pointerId) return;
+        const buildingTitle = document.getElementById('buildingTitle');
+        // If not in floor view, just reset state
+        if (!buildingTitle || !buildingTitle.textContent.startsWith('Floor')) {
+            isPointerDown = false;
+            moved = false;
+            try { container.releasePointerCapture(pointerId); } catch (err) {}
+            mainImage.style.transition = 'transform 200ms ease';
+            mainImage.style.transform = '';
+            return;
+        }
+
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        isPointerDown = false;
+        try { container.releasePointerCapture(pointerId); } catch (err) {}
+
+        // reset transform with animation
+        mainImage.style.transition = 'transform 200ms ease';
+        mainImage.style.transform = '';
+
+        if (moved && Math.abs(dx) > swipeThreshold && Math.abs(dx) > Math.abs(dy)) {
+            if (dx < 0) {
+                // swipe left -> next
+                showNextImage();
+            } else {
+                // swipe right -> previous
+                showPreviousImage();
+            }
+        }
+        moved = false;
+        resetTimer();
+    }
+
+    container.addEventListener('pointerup', endPointer);
+    container.addEventListener('pointercancel', endPointer);
+    container.addEventListener('pointerleave', endPointer);
+}
+
 // Attach event listeners to reset the timer on user activity
 window.onload = resetTimer;
 window.onmousemove = resetTimer;
@@ -53,6 +145,7 @@ window.onmousedown = resetTimer;
 window.onclick = resetTimer;
 window.onkeypress = resetTimer;
 window.addEventListener('scroll', resetTimer, true);
+window.addEventListener('load', () => { resetTimer(); initSwipe(); });
 
 // --- Existing Functions (with resetTimer added to relevant user actions) ---
 
@@ -253,13 +346,8 @@ function showNextImage() {
     }
 
     if (currentImages.length > 0) {
-        currentFloorStep = (currentFloorStep + 1);
-
-        if (currentFloorStep >= currentImages.length) {
-            loadFloorSelection();
-            currentFloorStep = 0;
-            return;
-        }
+    // advance and wrap so rooms repeat
+    currentFloorStep = (currentFloorStep + 1) % currentImages.length;
 
         const currentRoom = currentImages[currentFloorStep];
         mainImage.src = currentRoom.path;

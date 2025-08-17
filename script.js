@@ -12,6 +12,49 @@ let buildingFInterval;
 let lastFloorName = '';
 let lastRoomDetails = null;
 
+// New variable to track the index of the currently displayed detail image
+let currentDetailImageIndex = 0;
+
+// Data structure to hold multiple images for detailed views
+const roomDetailsImages = {
+    'Floor1': [
+        './image/floor1_f101.png',
+        './image/floor1_f102.png',
+        './image/floor1_f103.png',
+        './image/floor1_f104.png',
+        './image/floor1_f105.png',
+        './image/floor1_f106.png'
+    ],
+    
+    'Floor2': [
+        './image/floor2_f201.png',
+        './image/floor2_f202.png',
+        './image/floor2_f203.png',
+        './image/floor2_f204.png',
+        './image/floor2_f205.png',
+        './image/floor2_f206.png'
+    ],
+    
+    'Floor3': [
+        './image/floor3_f301.png',
+        './image/floor3_f302.png',
+        './image/floor3_f303.png',
+        './image/floor3_f304.png',
+        './image/floor3_f305.png',
+        './image/floor3_f306.png'
+    ],
+    
+    'Floor4': [
+        './image/floor4_f401.png',
+        './image/floor4_f402.png',
+        './image/floor4_f403.png',
+        './image/floor4_f404.png',
+        './image/floor4_f405.png',
+        './image/floor4_f406.png'
+    ],
+    
+};
+
 // --- Inactivity Timer Logic ---
 let inactivityTimer;
 const inactivityTimeLimit = 5000; // 5 seconds (5000 milliseconds)
@@ -23,7 +66,6 @@ let startX = 0;
 let startY = 0;
 let moved = false;
 const swipeThreshold = 60; // pixels to consider a swipe
-
 
 
 function resetToHome() {
@@ -53,25 +95,25 @@ function resetToHome() {
 }
 
 function loadFloorSelection() {
-  const mainImage = document.getElementById('mainImage');
-  const buildingTitle = document.getElementById('buildingTitle');
-  const floorButtonsContainer = document.getElementById('floorButtonsContainer');
-  const nextButton = document.getElementById('nextButton');
-  const backButton = document.getElementById('backButton');
-  const chooseFloorButton = document.getElementById('chooseFloorButton');
+    const mainImage = document.getElementById('mainImage');
+    const buildingTitle = document.getElementById('buildingTitle');
+    const floorButtonsContainer = document.getElementById('floorButtonsContainer');
+    const nextButton = document.getElementById('nextButton');
+    const backButton = document.getElementById('backButton');
+    const chooseFloorButton = document.getElementById('chooseFloorButton');
 
-  stopBuildingFCarousel();
-  if (nextButton) nextButton.style.visibility = 'hidden';
-  if (backButton) backButton.style.visibility = 'hidden';
-  if (chooseFloorButton) chooseFloorButton.style.visibility = 'hidden';
+    stopBuildingFCarousel();
+    if (nextButton) nextButton.style.visibility = 'hidden';
+    if (backButton) backButton.style.visibility = 'hidden';
+    if (chooseFloorButton) chooseFloorButton.style.visibility = 'hidden';
 
-  mainImage.src = './image/floor.png';
-  mainImage.alt = 'Building F - Floor Selection';
-  buildingTitle.textContent = 'Building F - Select a Floor';
-  floorButtonsContainer.style.visibility = 'visible';
-  mainImage.onclick = null;
-  currentStep = 2;
-  currentFloorStep = 0;
+    mainImage.src = './image/floor.png';
+    mainImage.alt = 'Building F - Floor Selection';
+    buildingTitle.textContent = 'Building F - Select a Floor';
+    floorButtonsContainer.style.visibility = 'visible';
+    mainImage.onclick = null;
+    currentStep = 2;
+    currentFloorStep = 0;
 }
 
 function resetTimer() {
@@ -96,7 +138,7 @@ function initSwipe() {
         if (e.isPrimary === false) return;
         // Only enable pointer interactions when we are in floor room display
         const buildingTitle = document.getElementById('buildingTitle');
-        if (!buildingTitle || !buildingTitle.textContent.startsWith('Floor')) return;
+        if (!buildingTitle || (!buildingTitle.textContent.startsWith('Floor') && !buildingTitle.textContent.endsWith('Detailed View'))) return;
         // Only start swipe when user presses on the image itself; allow buttons to receive clicks
         if (e.target !== mainImage) return;
 
@@ -112,7 +154,7 @@ function initSwipe() {
     container.addEventListener('pointermove', (e) => {
         if (!isPointerDown || e.pointerId !== pointerId) return;
         const buildingTitle = document.getElementById('buildingTitle');
-        if (!buildingTitle || !buildingTitle.textContent.startsWith('Floor')) return;
+        if (!buildingTitle || (!buildingTitle.textContent.startsWith('Floor') && !buildingTitle.textContent.endsWith('Detailed View'))) return;
 
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
@@ -127,8 +169,8 @@ function initSwipe() {
     function endPointer(e) {
         if (!isPointerDown || e.pointerId !== pointerId) return;
         const buildingTitle = document.getElementById('buildingTitle');
-        // If not in floor view, just reset state
-        if (!buildingTitle || !buildingTitle.textContent.startsWith('Floor')) {
+        // If not in floor view or detailed view, just reset state
+        if (!buildingTitle || (!buildingTitle.textContent.startsWith('Floor') && !buildingTitle.textContent.endsWith('Detailed View'))) {
             isPointerDown = false;
             moved = false;
             try { container.releasePointerCapture(pointerId); } catch (err) {}
@@ -231,7 +273,6 @@ function loadFloor(floorName) {
     lastFloorName = floorName;
     lastRoomDetails = null;
 
-    // ... (rest of the loadFloor function remains the same)
     if (floorName === 'Floor 1') {
         const initialImage = './image/floor_1_image_1.png';
         const initialTitle = 'Floor 1 - F101';
@@ -293,11 +334,29 @@ function showRoomDetails(roomName) {
         title: buildingTitle.textContent,
         room: roomName
     };
+    
+    currentDetailImageIndex = 0;
+    
+    // Corrected logic: Extract the floor number from the room name
+    const floorNumber = roomName.charAt(1);
+    const floorKey = 'Floor' + floorNumber;
+    const images = roomDetailsImages[floorKey];
 
-    mainImage.src = `./image/floor1_${roomName.toLowerCase()}.png`;
-    mainImage.alt = `ITC Building F - Floor 1 - ${roomName} - Detailed View`;
+    if (images && images.length > 0) {
+        const roomImageIndex = images.findIndex(imagePath => imagePath.includes(roomName.toLowerCase()));
+        if (roomImageIndex !== -1) {
+            currentDetailImageIndex = roomImageIndex;
+        } else {
+            currentDetailImageIndex = 0;
+        }
+        mainImage.src = images[currentDetailImageIndex];
+        mainImage.alt = `ITC Building F - ${roomName} - Detailed View ${currentDetailImageIndex + 1}`;
+    } else {
+        mainImage.src = `./image/floor${floorNumber}_${roomName.toLowerCase()}.png`;
+        mainImage.alt = `ITC Building F - Floor ${floorNumber} - ${roomName} - Detailed View`;
+    }
+
     buildingTitle.textContent = `${roomName} - Detailed View`;
-
     contentPart.style.display = 'flex';
     roomContent.innerHTML = `
         <h2>Room ${roomName}</h2>
@@ -312,13 +371,30 @@ function showRoomDetails(roomName) {
     `;
     mainImage.onclick = null;
 }
-
 function showNextImage() {
     resetTimer();
     const mainImage = document.getElementById('mainImage');
     const buildingTitle = document.getElementById('buildingTitle');
     const contentPart = document.getElementById('contentPart');
+    const nextButton = document.getElementById('nextButton');
+    const backButton = document.getElementById('backButton');
+    
+    // Handle navigation in detailed view first
+    if (contentPart.style.display === 'flex') {
+        const roomNameMatch = buildingTitle.textContent.match(/^([A-Z0-9]+)/);
+        if (roomNameMatch) {
+            const roomName = roomNameMatch[1];
+            const images = roomDetailsImages[roomName];
+            if (images && images.length > 1) {
+                currentDetailImageIndex = (currentDetailImageIndex + 1) % images.length;
+                mainImage.src = images[currentDetailImageIndex];
+                buildingTitle.textContent = `${roomName} - Detailed View ${currentDetailImageIndex + 1}`;
+                return; // Stop here, no more logic needed
+            }
+        }
+    }
 
+    // This block handles the back-from-detail-view functionality
     if (contentPart.style.display === 'flex' && lastRoomDetails) {
         mainImage.src = lastRoomDetails.image;
         mainImage.alt = lastRoomDetails.alt;
@@ -394,7 +470,25 @@ function showPreviousImage() {
     const mainImage = document.getElementById('mainImage');
     const buildingTitle = document.getElementById('buildingTitle');
     const contentPart = document.getElementById('contentPart');
+    const nextButton = document.getElementById('nextButton');
+    const backButton = document.getElementById('backButton');
+    
+    // Handle navigation in detailed view first
+    if (contentPart.style.display === 'flex') {
+        const roomNameMatch = buildingTitle.textContent.match(/^([A-Z0-9]+)/);
+        if (roomNameMatch) {
+            const roomName = roomNameMatch[1];
+            const images = roomDetailsImages[roomName];
+            if (images && images.length > 1) {
+                currentDetailImageIndex = (currentDetailImageIndex - 1 + images.length) % images.length;
+                mainImage.src = images[currentDetailImageIndex];
+                buildingTitle.textContent = `${roomName} - Detailed View ${currentDetailImageIndex + 1}`;
+                return; // Stop here, no more logic needed
+            }
+        }
+    }
 
+    // This block handles the back-from-detail-view functionality
     if (contentPart.style.display === 'flex' && lastRoomDetails) {
         mainImage.src = lastRoomDetails.image;
         mainImage.alt = lastRoomDetails.alt;

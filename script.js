@@ -67,7 +67,7 @@ const roomDetailsImages = {
 
 // --- Inactivity Timer Logic ---
 let inactivityTimer;
-const inactivityTimeLimit = 5000; // 5 seconds (5000 milliseconds)
+const inactivityTimeLimit = 10000; // 10 seconds (5000 milliseconds)
 
 // Swipe / Drag support
 let isPointerDown = false;

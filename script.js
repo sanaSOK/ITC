@@ -5,6 +5,16 @@ let buildingFImages = [
     './image/building F left.png',
     './image/building F right.png'
 ];
+
+// New array for ITC main building images
+let itcImages = [
+    './image/itc.png',
+    './image/itc-left.png',
+    './image/itc-right.png'
+];
+let currentItcIndex = 0;
+let itcInterval;
+
 let currentBuildingFIndex = 0;
 let buildingFInterval;
 
@@ -78,11 +88,12 @@ function resetToHome() {
     const chooseFloorButton = document.getElementById('chooseFloorButton');
     if (chooseFloorButton) chooseFloorButton.style.visibility = 'hidden';
 
-    // Stop any ongoing carousels
+    // Stop all ongoing carousels
     stopBuildingFCarousel();
+    stopItcCarousel(); // New: Stop ITC carousel
     
     // Reset all elements to their initial state
-    mainImage.src = './image/itc.png';
+    mainImage.src = itcImages[0]; // New: Use first image from ITC array
     mainImage.alt = 'Institute of Technology of Cambodia building';
     mainImage.onclick = handleImageClick;
     buildingTitle.textContent = 'Initial Building';
@@ -92,6 +103,7 @@ function resetToHome() {
     backButton.style.visibility = 'hidden';
     currentStep = 0; // Reset the step counter
     resetTimer(); // Start the timer again
+    startItcCarousel(); // New: Start the ITC carousel
 }
 
 function loadFloorSelection() {
@@ -103,6 +115,7 @@ function loadFloorSelection() {
     const chooseFloorButton = document.getElementById('chooseFloorButton');
 
     stopBuildingFCarousel();
+    stopItcCarousel(); // New: Stop ITC carousel
     if (nextButton) nextButton.style.visibility = 'hidden';
     if (backButton) backButton.style.visibility = 'hidden';
     if (chooseFloorButton) chooseFloorButton.style.visibility = 'hidden';
@@ -136,17 +149,17 @@ function initSwipe() {
 
     container.addEventListener('pointerdown', (e) => {
         if (e.isPrimary === false) return;
-        // Only enable pointer interactions when we are in floor room display
+        // Only enable pointer interactions when in an interactive view
         const buildingTitle = document.getElementById('buildingTitle');
-        if (!buildingTitle || (!buildingTitle.textContent.startsWith('Floor') && !buildingTitle.textContent.endsWith('Detailed View'))) return;
-        // Only start swipe when user presses on the image itself; allow buttons to receive clicks
+        if (!buildingTitle || (!buildingTitle.textContent.startsWith('Floor') && !buildingTitle.textContent.endsWith('Detailed View') && !buildingTitle.textContent.includes('Initial Building'))) return;
+        // Only start swipe when user presses on the image itself
         if (e.target !== mainImage) return;
 
         isPointerDown = true;
         pointerId = e.pointerId;
         startX = e.clientX;
         startY = e.clientY;
-        moved = false;
+        moved = false; // Reset the 'moved' flag
         try { container.setPointerCapture(pointerId); } catch (err) {}
         resetTimer();
     });
@@ -154,13 +167,14 @@ function initSwipe() {
     container.addEventListener('pointermove', (e) => {
         if (!isPointerDown || e.pointerId !== pointerId) return;
         const buildingTitle = document.getElementById('buildingTitle');
-        if (!buildingTitle || (!buildingTitle.textContent.startsWith('Floor') && !buildingTitle.textContent.endsWith('Detailed View'))) return;
+        if (!buildingTitle || (!buildingTitle.textContent.startsWith('Floor') && !buildingTitle.textContent.endsWith('Detailed View') && !buildingTitle.textContent.includes('Initial Building'))) return;
 
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
-        // If horizontal move is larger than vertical move, treat as drag
+        
+        // If horizontal move is larger than vertical move, and exceeds a small threshold, treat as a drag
         if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
-            moved = true;
+            moved = true; 
             mainImage.style.transition = 'none';
             mainImage.style.transform = `translateX(${dx}px)`;
         }
@@ -169,8 +183,8 @@ function initSwipe() {
     function endPointer(e) {
         if (!isPointerDown || e.pointerId !== pointerId) return;
         const buildingTitle = document.getElementById('buildingTitle');
-        // If not in floor view or detailed view, just reset state
-        if (!buildingTitle || (!buildingTitle.textContent.startsWith('Floor') && !buildingTitle.textContent.endsWith('Detailed View'))) {
+        // If not in a view with swiping, just reset state
+        if (!buildingTitle || (!buildingTitle.textContent.startsWith('Floor') && !buildingTitle.textContent.endsWith('Detailed View') && !buildingTitle.textContent.includes('Initial Building'))) {
             isPointerDown = false;
             moved = false;
             try { container.releasePointerCapture(pointerId); } catch (err) {}
@@ -188,14 +202,18 @@ function initSwipe() {
         mainImage.style.transition = 'transform 200ms ease';
         mainImage.style.transform = '';
 
-        if (moved && Math.abs(dx) > swipeThreshold && Math.abs(dx) > Math.abs(dy)) {
-            if (dx < 0) {
-                // swipe left -> next
-                showNextImage();
-            } else {
-                // swipe right -> previous
-                showPreviousImage();
+        if (moved) {
+            // Check if it's a significant swipe
+            if (Math.abs(dx) > swipeThreshold && Math.abs(dx) > Math.abs(dy)) {
+                if (dx < 0) {
+                    showNextImage();
+                } else {
+                    showPreviousImage();
+                }
             }
+        } else {
+            // If the pointer didn't move much, treat it as a click
+            handleImageClick();
         }
         moved = false;
         resetTimer();
@@ -207,7 +225,7 @@ function initSwipe() {
 }
 
 // Attach event listeners to reset the timer on user activity
-window.onload = resetTimer;
+window.onload = resetToHome; // New: call resetToHome on load
 window.onmousemove = resetTimer;
 window.onmousedown = resetTimer;
 window.onclick = resetTimer;
@@ -217,6 +235,22 @@ window.addEventListener('load', () => { resetTimer(); initSwipe(); });
 
 // --- Existing Functions (with resetTimer added to relevant user actions) ---
 
+// New function to start ITC carousel
+function startItcCarousel() {
+    stopItcCarousel();
+    itcInterval = setInterval(() => {
+        const mainImage = document.getElementById('mainImage');
+        currentItcIndex = (currentItcIndex + 1) % itcImages.length;
+        mainImage.src = itcImages[currentItcIndex];
+        mainImage.alt = 'ITC Building - Image ' + (currentItcIndex + 1);
+    }, 3000);
+}
+
+// New function to stop ITC carousel
+function stopItcCarousel() {
+    clearInterval(itcInterval);
+}
+
 function handleImageClick() {
     resetTimer();
     const mainImage = document.getElementById('mainImage');
@@ -224,6 +258,7 @@ function handleImageClick() {
     const floorButtonsContainer = document.getElementById('floorButtonsContainer');
 
     if (currentStep === 0) {
+        stopItcCarousel(); // New: Stop the ITC carousel on click
         mainImage.src = buildingFImages[currentBuildingFIndex];
         mainImage.alt = 'ITC Building F';
         buildingTitle.textContent = 'Building F';
@@ -259,14 +294,14 @@ function stopBuildingFCarousel() {
 
 function loadFloor(floorName) {
     resetTimer();
+    const chooseFloorButton = document.getElementById('chooseFloorButton');
+    if (chooseFloorButton) chooseFloorButton.style.visibility = 'visible';
     const mainImage = document.getElementById('mainImage');
     const buildingTitle = document.getElementById('buildingTitle');
     const floorButtonsContainer = document.getElementById('floorButtonsContainer');
     const nextButton = document.getElementById('nextButton');
     const contentPart = document.getElementById('contentPart');
     const backButton = document.getElementById('backButton');
-    const chooseFloorButton = document.getElementById('chooseFloorButton');
-    if (chooseFloorButton) chooseFloorButton.style.visibility = 'visible';
     
     floorButtonsContainer.style.visibility = 'hidden';
     contentPart.style.display = 'none';
@@ -393,6 +428,14 @@ function showNextImage() {
             }
         }
     }
+    
+    // Handle navigation in initial ITC view
+    if (buildingTitle.textContent.includes('Initial Building')) {
+        currentItcIndex = (currentItcIndex + 1) % itcImages.length;
+        mainImage.src = itcImages[currentItcIndex];
+        buildingTitle.textContent = 'Initial Building';
+        return;
+    }
 
     // This block handles the back-from-detail-view functionality
     if (contentPart.style.display === 'flex' && lastRoomDetails) {
@@ -450,7 +493,16 @@ function showNextImage() {
         currentImages = floor3Images;
     } else if (buildingTitle.textContent.startsWith('Floor 4')) {
         currentImages = floor4Images;
+    } else if (buildingTitle.textContent.includes('Building F')) { // Add this condition for Building F
+        currentImages = buildingFImages.map(path => ({ path: path, title: 'Building F' }));
+        currentBuildingFIndex = (currentBuildingFIndex + 1) % currentImages.length;
+        const currentBuildingF = currentImages[currentBuildingFIndex];
+        mainImage.src = currentBuildingF.path;
+        mainImage.alt = currentBuildingF.title;
+        buildingTitle.textContent = currentBuildingF.title;
+        return;
     }
+
 
     if (currentImages.length > 0) {
     // advance and wrap so rooms repeat
@@ -487,6 +539,14 @@ function showPreviousImage() {
             }
         }
     }
+    
+    // Handle navigation in initial ITC view
+    if (buildingTitle.textContent.includes('Initial Building')) {
+        currentItcIndex = (currentItcIndex - 1 + itcImages.length) % itcImages.length;
+        mainImage.src = itcImages[currentItcIndex];
+        buildingTitle.textContent = 'Initial Building';
+        return;
+    }
 
     // This block handles the back-from-detail-view functionality
     if (contentPart.style.display === 'flex' && lastRoomDetails) {
@@ -544,6 +604,14 @@ function showPreviousImage() {
         currentImages = floor3Images;
     } else if (buildingTitle.textContent.startsWith('Floor 4')) {
         currentImages = floor4Images;
+    } else if (buildingTitle.textContent.includes('Building F')) { // Add this condition for Building F
+        currentImages = buildingFImages.map(path => ({ path: path, title: 'Building F' }));
+        currentBuildingFIndex = (currentBuildingFIndex - 1 + currentImages.length) % currentImages.length;
+        const currentBuildingF = currentImages[currentBuildingFIndex];
+        mainImage.src = currentBuildingF.path;
+        mainImage.alt = currentBuildingF.title;
+        buildingTitle.textContent = currentBuildingF.title;
+        return;
     }
 
     if (currentImages.length > 0) {
